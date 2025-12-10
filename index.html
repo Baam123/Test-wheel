@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vòng Quay May Mắn ITC</title>
+  <link rel="stylesheet" href="css/typo/typo.css" />
+  <link rel="stylesheet" href="css/hc-canvas-luckwheel.css" />
+  <link rel="stylesheet" href="css/custom-styles.css" />
+
+  <link href="./images/hengaplai.png" rel="icon" type="image/x-icon" />
+</head>
+
+<body class="bg">
+  <div id="content" class="container">
+    <div id="post">
+      <div class="wrapper typo" id="wrapper">
+        <section id="luckywheel" class="hc-luckywheel">
+          <div class="hc-luckywheel-container">
+            <canvas class="hc-luckywheel-canvas" width="500" height="500">Vòng Xoay May Mắn</canvas>
+          </div>
+          <a class="hc-luckywheel-btn" href="javascript:;">Xoay</a>
+        </section>
+      </div>
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+      <script src="js/hc-canvas-luckwheel.js"></script>
+      <script>
+        var isPercentage = true;
+        // Tổng xác suất = 1.0 chính xác
+        var prizes = [
+          {
+            text: "Chào mừng bạn đến với ITC",
+            img: "images/hengaplai.png",
+            percentpage: 0.25
+          },
+          {
+            text: "Chuột Bluetooth",
+            img: "images/chuot2.png",
+            percentpage: 0.10
+          },
+          {
+            text: "Bình nước",
+            img: "images/binh.png",
+            percentpage: 0.20
+          },
+          {
+            text: "USB 3.2 Kingston",
+            img: "images/usb.png",
+            percentpage: 0.15
+          },
+          {
+            text: "Chào mừng bạn đến với ITC",
+            img: "images/hengaplai.png",
+            percentpage: 0.20
+          },
+          {
+            text: "Gấu bông",
+            img: "images/gaubong.png",
+            percentpage: 0.10
+          },
+          {
+            text: "Quà bí ẩn",
+            img: "images/gift_Y.png",
+            percentpage: 0.00
+          },
+          {
+            text: "Balo ITC",
+            img: "images/balo1.png",
+            percentpage: 0.00
+          },
+        ];
+
+        // Kiểm tra tổng xác suất
+        const totalProbability = prizes.reduce((sum, p) => sum + p.percentpage, 0);
+        console.log("✅ Tổng xác suất:", totalProbability.toFixed(2));
+
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'center',
+          showConfirmButton: false,
+          timer: 8000,
+          timerProgressBar: true,
+          background: 'rgba(255, 255, 255, 0)',
+          backdrop: false,
+        });
+
+        document.addEventListener(
+          "DOMContentLoaded",
+          function () {
+            hcLuckywheel.init({
+              id: "luckywheel",
+              config: function (callback) {
+                callback && callback(prizes);
+              },
+              mode: "both",
+              getPrize: function (callback) {
+                var rand = randomIndex(prizes);
+                var chances = rand;
+                callback && callback([rand, chances]);
+              },
+              gotBack: function (data, index) {
+                console.log("=== GOTBACK CALLED ===");
+                console.log("Raw data:", data);
+                console.log("Index:", index);
+
+                // TẮT TOÀN BỘ SWEETALERT TỪ THƯ VIỆN
+                const originalSwal = window.Swal;
+                window.Swal = {
+                  fire: function () {
+                    console.log("Swal.fire blocked from library");
+                    return Promise.resolve();
+                  }
+                };
+
+                // Lấy thông tin prize
+                let prizeText = '';
+                let prizeImg = '';
+
+                if (typeof index === 'number' && prizes[index]) {
+                  prizeText = prizes[index].text;
+                  prizeImg = prizes[index].img;
+                } else if (typeof data === 'string') {
+                  prizeText = data;
+                  let foundPrize = prizes.find(p => p.text === data);
+                  prizeImg = foundPrize ? foundPrize.img : '';
+                }
+
+                console.log("Final prize text:", prizeText);
+                console.log("Final prize img:", prizeImg);
+
+                setTimeout(() => {
+                  // KHÔI PHỤC LẠI SWAL
+                  window.Swal = originalSwal;
+
+                  if (!window.Swal || !window.Swal.fire) {
+                    console.error("SweetAlert2 không khả dụng");
+                    alert(`Chúc mừng! Bạn đã trúng: ${prizeText}`);
+                    return;
+                  }
+
+                  // Xử lý các trường hợp
+                  if (data == null || prizeText == null) {
+                    originalSwal.fire({
+                      title: 'Chương trình kết thúc',
+                      text: 'Đã hết phần thưởng',
+                      icon: 'error',
+                      confirmButtonText: 'Đóng',
+                      backdrop: false,
+                      allowOutsideClick: false
+                    });
+                  } else if (prizeText === 'Chào mừng bạn đến với ITC' || prizeText.includes('may mắn')) {
+                    originalSwal.fire({
+                      title: 'CHÀO MỪNG',
+                      text: 'Tân sinh viên ITC Khóa 25',
+                      imageUrl: prizeImg || './images/hengaplai.png',
+                      imageWidth: 100,
+                      imageHeight: 100,
+                      confirmButtonText: 'OK',
+                      backdrop: false,
+                      allowOutsideClick: false,
+                      customClass: {
+                        popup: 'simple-swal-popup',
+                        confirmButton: 'simple-swal-button'
+                      },
+                      imageAlt: 'Logo ITC'
+                    }).catch(err => {
+                      console.error("Lỗi hiển thị popup:", err);
+                    });
+                  } else {
+                    let displayImg = prizeImg || './images/logo.png';
+
+                    originalSwal.fire({
+                      title: 'Chúc mừng!',
+                      text: `Bạn đã trúng: ${prizeText}`,
+                      imageUrl: displayImg,
+                      imageWidth: 120,
+                      confirmButtonText: 'OK',
+                      backdrop: false,
+                      allowOutsideClick: false,
+                      customClass: {
+                        popup: 'simple-swal-popup',
+                        confirmButton: 'simple-swal-button'
+                      },
+                      imageAlt: prizeText
+                    }).catch(err => {
+                      console.error("Lỗi hiển thị popup:", err);
+                    });
+                  }
+                }, 100);
+              }
+            });
+          },
+          false
+        );
+
+        function randomIndex(prizes) {
+          if (!isPercentage) {
+            return Math.floor(Math.random() * prizes.length);
+          }
+
+          let rand = Math.random();
+          let cumulativeProbability = 0;
+
+          console.log("🎲 Random value:", rand.toFixed(4));
+
+          for (let i = 0; i < prizes.length; i++) {
+            cumulativeProbability += prizes[i].percentpage;
+            console.log(`  Index ${i}: cumulative = ${cumulativeProbability.toFixed(4)}`);
+
+            if (rand < cumulativeProbability) {
+              console.log(`✅ Selected: Index ${i} - ${prizes[i].text}`);
+              return i;
+            }
+          }
+
+          console.warn("⚠️ Fallback to last prize");
+          return prizes.length - 1;
+        }
+
+      </script>
+    </div>
+  </div>
+</body>
+
+</html>
